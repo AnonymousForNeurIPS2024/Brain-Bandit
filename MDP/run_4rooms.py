@@ -61,17 +61,19 @@ if __name__ == '__main__':
     regret_list = []
     base_path = 'saved/map'
     # seed = np.random.randint(100)
-    seed = 0
+    seed = 10
     nEps = 300
-    length = 100
+    length = 50
     save = False
     agent_name = 'UBE_BBN'
     T = 10
     coverage = np.zeros(shape=(T,nEps))
+    x = 0.
+    t = 0.
     for i in tqdm(range(T)):
         env = make_FourRooms(epLen=length)
         f_ext = FeatureTrueState(env.epLen, env.nState, env.nAction, env.nState)
-        agent = eval(agent_name)(nState=env.nState, nAction=env.nAction, epLen=env.epLen, alpha0=1 / env.nState)
+        agent = eval(agent_name)(nState=env.nState, nAction=env.nAction, epLen=env.epLen, alpha0=1/env.nState)
         targetPath = base_path + f'_seed{seed}.csv'
         data = []
         qVals, qMax = env.compute_qVals()
@@ -90,7 +92,6 @@ if __name__ == '__main__':
             while pContinue > 0:
                 # Step through the episode
                 h, oldState = f_ext.get_feat(env)
-                # print(f'h: {h}')
                 agent.count_state(oldState)
                 action = agent.pick_action(oldState, h)
                 epRegret += qVals[oldState, h].max() - qVals[oldState, h][action]
@@ -124,10 +125,8 @@ if __name__ == '__main__':
         # agent.state_visitation
     # print(agent.qVar)
     visualize_vistation(agent.state_visitation)
-    # visualize_global_uncertainty(agent.qVar,0,11,0)
-    # visualize_local_uncertainty(agent.R_prior,0,11,0)
-    np.save("coverage_rate_"+agent_name, coverage)
-    plt.plot(coverage)
-    # plt.show()
-    # print(np.mean(regret_list))
-    # print(np.std(regret_list))
+    np.save(f"saved/L{length}/coverage_rate_" + agent_name + 'optimistic', coverage)
+    if 'UBE' in agent_name:
+        visualize_global_uncertainty(agent.qVar,0,11,0)
+        visualize_local_uncertainty(agent.R_prior,0,11,0)
+
