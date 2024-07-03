@@ -90,6 +90,7 @@ class FiniteHorizonTabularAgent(FiniteHorizonAgent):
         self.R_prior = {}
         self.P_prior = {}
 
+        self.state_visitation = [0 for _ in range(nState)]
         for state in range(nState):
             for action in range(nAction):
                 self.R_prior[state, action] = (self.mu0, self.tau0)
@@ -119,7 +120,7 @@ class FiniteHorizonTabularAgent(FiniteHorizonAgent):
         if pContinue == 1:
             self.P_prior[oldState, action][newState] += 1
 
-    def egreedy(self, state, timestep, epsilon=0):
+    def egreedy(self, state, timestep, epsilon=0.):
         '''
         Select action according to a greedy policy
 
@@ -147,6 +148,9 @@ class FiniteHorizonTabularAgent(FiniteHorizonAgent):
         '''
         action = self.egreedy(state, timestep)
         return action
+    def count_state(self, state):
+
+        self.state_visitation[state] += 1
 
     def sample_mdp(self):
         '''
@@ -726,41 +730,37 @@ class UBE_UCB(UBE):
         else:
             action = np.random.choice(np.where(Q == Q.max())[0])
         return action
-class UBE_Bio(UBE):
+class UBE_BBN(UBE):
     '''
     Optimistic Posterior Sampling for Reinforcement Learning
     '''
 
     def __init__(self, nState, nAction, epLen,
-                 alpha0=1., mu0=0., tau0=1e-6, tau=1e-3, **kwargs):
+                 alpha0=1., mu0=0., tau0=1e-6, tau=1e-3, BBN_dim=None, BBN_para=None, BBN_scale=False, **kwargs):
 
-        super(UBE_Bio, self).__init__(nState, nAction, epLen,
+        super(UBE_BBN, self).__init__(nState, nAction, epLen,
                                       alpha0, mu0, tau0, tau)
         self.qVals = {}
         self.qMax = {}
         self.qVar = {}
+        self.dim = BBN_dim
+        self.para = BBN_para
+        self.scale = BBN_scale
+    def softmax_scale(self,x):
+
+        e_x = np.exp(x - np.max(x))
+        return e_x / e_x.sum() * 2
 
     def egreedy(self, state, timestep, epsilon=0):
-        dim = 6
-        varargin = {
-            'step': 100,  # how many steps to run the brain circuit before executing the next movement
-            'tau': np.ones(dim),  # decay time constant
-            'weights_in': np.ones(dim) * 1.,  # input weights
-            'rs': np.ones(dim) * .5,  #
-            'w': np.ones(dim) * 4,  # weight of mutual inhibition
-            'k': 7. * np.ones(dim),  # sigmoid center
-            'n': 1.5 * np.ones(dim),  # sigmoid slope
-            'bi': np.ones(dim) * 6.25,  # baseline production
-            'dt': 0.4,  # size of timesteps
-            'nsf': 0.,  # noise level
-            'w_avg_comp': 1e-2,
-            'w_std_comp': 1e-1
-        }
+
         qVals = self.qVals[state, timestep]
         qVar = self.qVar[state, timestep]
-        net = Lyapunov_Worm_Deconstruction(varargin=varargin, dim=dim)
-        action = net.decide_simulation_multi_dim(qVals, np.sqrt(qVar), save_history=True, init=True)
-
+        net = Lyapunov_Worm_Deconstruction(varargin=self.para, dim=self.dim)
+        if self.scale == True:
+            uncertainty = self.softmax_scale(np.sqrt(qVar))
+        else:
+            uncertainty = np.sqrt(qVar)
+        action = net.decide_simulation_multi_dim(qVals, uncertainty, save_history=True, init=True)
         return action
 
 class EpsilonGreedy(FiniteHorizonTabularAgent):

@@ -86,7 +86,7 @@ if __name__ == '__main__':
             'w_std_comp': 1.
         }
     for i in tqdm(range(T)):
-        env = make_FourRooms(epLen=length)
+        env = make_map(epLen=length)
         f_ext = FeatureTrueState(env.epLen, env.nState, env.nAction, env.nState)
         agent = eval(agent_name)(nState=env.nState, nAction=env.nAction, epLen=env.epLen, alpha0=1/env.nState, BBN_dim=dim,BBN_para=BBN_para ,BBN_scale=True)
         targetPath = base_path + f'_seed{seed}.csv'
@@ -113,7 +113,7 @@ if __name__ == '__main__':
                 reward, newState, pContinue = env.advance(action)
                 epReward += reward
                 agent.update_obs(oldState, action, reward, newState, pContinue, h)
-            coverage[i][ep] = coverage_rate(agent.state_visitation, 104)
+            coverage[i][ep] = coverage_rate(agent.state_visitation, 100)
             cumReward += epReward
             cumRegret += epRegret
             empRegret += (epMaxVal - epReward)
@@ -142,6 +142,6 @@ if __name__ == '__main__':
     visualize_vistation(agent.state_visitation)
     np.save(f"saved/L{length}/coverage_rate_" + agent_name + 'optimistic', coverage)
     if 'UBE' in agent_name:
-        visualize_global_uncertainty(agent.qVar,0,11,0)
-        visualize_local_uncertainty(agent.R_prior,0,11,0)
+        visualize_global_uncertainty(agent.qVar,0,10,0)
+        visualize_local_uncertainty(agent.R_prior,0,10,0)
 

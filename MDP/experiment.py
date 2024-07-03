@@ -48,9 +48,10 @@ def run_finite_tabular_experiment(agent, env, f_ext, nEps, seed=1,
 
         while pContinue > 0:
             # Step through the episode
+
             h, oldState = f_ext.get_feat(env)
             # print(f'h: {h}')
-            # print(f'oldState: {oldState}')
+            agent.count_state(oldState)
             action = agent.pick_action(oldState, h)
             epRegret += qVals[oldState, h].max() - qVals[oldState, h][action]
 
@@ -77,7 +78,7 @@ def run_finite_tabular_experiment(agent, env, f_ext, nEps, seed=1,
         # print('Writing to file ' + targetPath)
         dt.to_csv(targetPath, index=False, float_format='%.2f')
 
-    print(f'saved file to {targetPath}')
+        print(f'saved file to {targetPath}')
 
     print('**************************************************')
     print('Experiment complete')

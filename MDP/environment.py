@@ -145,8 +145,127 @@ class TabularMDP(Environment):
 
 #-------------------------------------------------------------------------------
 # Benchmark environments
+def make_map(epLen=100, n=10):
+    #0: up y+1
+    #1: down y-1
+    #2: left x-1
+    #3: right x+1
+    f = lambda x,y: y*n+x
+    nAction = 4
+    R_true = {}
+    P_true = {}
+    nState = n ** 2
+    for s in range(nState):
+        for a in range(nAction):
+            R_true[s, a] = (0, 0)
+            P_true[s, a] = np.zeros(nState)
+
+    # Rewards
+    R_true[f(n-1,n),3] = 0
+    R_true[f(n,n-1),0] = 0
+
+    # Transitions
+    for x in range(n):
+        for y in range(n):
+            if y+1 < n:
+                P_true[f(x,y),0][f(x,y+1)] = 1
+            else:
+                P_true[f(x,y),0][f(x,y)] = 1
+            if y-1 >= 0:
+                P_true[f(x,y),1][f(x,y-1)] = 1
+            else:
+                P_true[f(x,y),1][f(x,y)] = 1
+            if x+1 < n:
+                P_true[f(x,y),3][f(x+1,y)] = 1
+            else:
+                P_true[f(x,y),3][f(x,y)] = 1
+            if x-1 >= 0:
+                P_true[f(x,y),2][f(x-1,y)] = 1
+            else:
+                P_true[f(x,y),2][f(x,y)] = 1
+
+    Map = TabularMDP(nState, nAction, epLen)
+    Map.R = R_true
+    Map.P = P_true
+    Map.reset()
+    return Map
 
 
+def make_FourRooms(epLen=100, n=11):
+    #0: up y+1
+    #1: down y-1
+    #2: left x-1
+    #3: right x+1
+    f = lambda x,y: y*n+x
+    nAction = 4
+    R_true = {}
+    P_true = {}
+    nState = n ** 2
+    for s in range(nState):
+        for a in range(nAction):
+            R_true[s, a] = (0, 0)
+            P_true[s, a] = np.zeros(nState)
+
+    # Rewards
+    R_true[f(n-1,n),3] = 0
+    R_true[f(n,n-1),0] = 0
+
+    # Transitions
+    for x in range(n):
+        for y in range(n):
+            if y+1 < n:
+                P_true[f(x,y),0][f(x,y+1)] = 1
+            else:
+                P_true[f(x,y),0][f(x,y)] = 1
+            if y-1 >= 0:
+                P_true[f(x,y),1][f(x,y-1)] = 1
+            else:
+                P_true[f(x,y),1][f(x,y)] = 1
+            if x+1 < n:
+                P_true[f(x,y),3][f(x+1,y)] = 1
+            else:
+                P_true[f(x,y),3][f(x,y)] = 1
+            if x-1 >= 0:
+                P_true[f(x,y),2][f(x-1,y)] = 1
+            else:
+                P_true[f(x,y),2][f(x,y)] = 1
+    wall1 = [0,1,3,4,6,7,9,10]
+    for y in wall1:
+        P_true[f(4,y),3][f(5,y)] = 0
+        P_true[f(4,y),3][f(4,y)] = 1
+        P_true[f(6, y), 2][f(5, y)] = 0
+        P_true[f(6, y), 2][f(6, y)] = 1
+    wall2 = [0, 1, 3, 4, 6, 7, 9, 10]
+    for x in wall2:
+        P_true[f(x,4),0][f(x,5)] = 0
+        P_true[f(x,4),0][f(x,1)] = 1
+        P_true[f(x, 6), 1][f(x, 5)] = 0
+        P_true[f(x, 6), 1][f(x, 6)] = 1
+    P_true[f(5, 2), 0][f(5, 3)] = 0
+    P_true[f(5, 2), 0][f(5, 2)] = 1
+    P_true[f(5, 2), 1][f(5, 1)] = 0
+    P_true[f(5, 2), 1][f(5, 2)] = 1
+
+    P_true[f(5, 8), 0][f(5, 9)] = 0
+    P_true[f(5, 8), 0][f(5, 8)] = 1
+    P_true[f(5, 8), 1][f(5, 7)] = 0
+    P_true[f(5, 8), 1][f(5, 8)] = 1
+
+    P_true[f(2, 5), 2][f(1, 5)] = 0
+    P_true[f(2, 5), 2][f(2, 5)] = 1
+    P_true[f(2, 5), 3][f(3, 5)] = 0
+    P_true[f(2, 5), 3][f(2, 5)] = 1
+
+    P_true[f(8, 5), 2][f(7, 5)] = 0
+    P_true[f(8, 5), 2][f(8, 5)] = 1
+    P_true[f(8, 5), 3][f(9, 5)] = 0
+    P_true[f(8, 5), 3][f(8, 5)] = 1
+
+    Map = TabularMDP(nState, nAction, epLen)
+    Map.R = R_true
+    Map.P = P_true
+    Map.reset()
+    return Map
 def make_riverSwim(epLen=20, nState=6):
     '''
     Makes the benchmark RiverSwim MDP.
