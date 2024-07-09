@@ -1,4 +1,4 @@
-
+import os.path
 from environment import make_riverSwim,make_riverSwim_origin, make_SixArms, make_map, make_FourRooms
 from feature_extractor import FeatureTrueState
 from agent import PSRL, UCRL2, OptimisticPSRL, OTS_MDP, EpsilonGreedy,UBE, UBE_TS, UBE_UCB, UBE_BBN
@@ -8,7 +8,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import pandas as pd
 from tqdm import tqdm
-def visualize_vistation(state_visitation):
+def visualize_vistation(state_visitation, agent_name, ep):
 
 
     n_state = len(state_visitation)
@@ -18,7 +18,7 @@ def visualize_vistation(state_visitation):
         visitation_map[int(i/n), i%n] = state_visitation[i]
 
     sns.heatmap(visitation_map, vmax=300)
-    plt.title("Visitation")
+    plt.title(f"Visitation counts for {agent_name} at ep {ep}")
     plt.show()
 
 def visualize_global_uncertainty(qVar, timesteps, n, action):
@@ -61,15 +61,15 @@ if __name__ == '__main__':
     regret_list = []
     base_path = 'saved/map'
     # seed = np.random.randint(100)
-    seed = 10
+    seed = 0
     nEps = 300
-    length = 50
+    length = 150
     save = False
     agent_name = 'UBE_BBN'
     T = 10
+    Visualize = True
+    VisualizeFrequency = 50
     coverage = np.zeros(shape=(T,nEps))
-    x = 0.
-    t = 0.
     dim = 4
     BBN_para = {
             'step': 100,  # how many steps to run the brain circuit before executing the next movement
@@ -88,7 +88,8 @@ if __name__ == '__main__':
     for i in tqdm(range(T)):
         env = make_map(epLen=length)
         f_ext = FeatureTrueState(env.epLen, env.nState, env.nAction, env.nState)
-        agent = eval(agent_name)(nState=env.nState, nAction=env.nAction, epLen=env.epLen, alpha0=1/env.nState, BBN_dim=dim,BBN_para=BBN_para ,BBN_scale=True)
+        alpha0 = 1. / env.nState
+        agent = eval(agent_name)(nState=env.nState, nAction=env.nAction, epLen=env.epLen,  BBN_dim=dim,BBN_para=BBN_para ,BBN_scale=True)
         targetPath = base_path + f'_seed{seed}.csv'
         data = []
         qVals, qMax = env.compute_qVals()
@@ -105,7 +106,6 @@ if __name__ == '__main__':
             epRegret = 0
             pContinue = 1
             while pContinue > 0:
-                # Step through the episode
                 h, oldState = f_ext.get_feat(env)
                 agent.count_state(oldState)
                 action = agent.pick_action(oldState, h)
@@ -117,11 +117,9 @@ if __name__ == '__main__':
             cumReward += epReward
             cumRegret += epRegret
             empRegret += (epMaxVal - epReward)
-            # Variable granularity
-            # Logging to dataframe
             data.append([ep, epReward, cumReward, cumRegret, empRegret])
-            # print('episode:', ep, 'cumReward:', cumReward, 'cumRegret:', cumRegret, 'empRegret:', empRegret, 'epReward',epReward)
-            # print(f'Q: {agent.qVals}')
+            if Visualize and ep % VisualizeFrequency == 0:
+                visualize_vistation(agent.state_visitation, agent_name, ep+1)
             seed+=1
         if save:
             dt = pd.DataFrame(data,
@@ -136,11 +134,13 @@ if __name__ == '__main__':
         regret = cumRegret
         regret_list.append(regret)
 
-        print(coverage_rate(agent.state_visitation, 104))
+        print(coverage_rate(agent.state_visitation, 100))
         # agent.state_visitation
-    # print(agent.qVar)
-    visualize_vistation(agent.state_visitation)
-    np.save(f"saved/L{length}/coverage_rate_" + agent_name + 'optimistic', coverage)
+
+    path = f"saved/MapL{length}"
+    if not os.path.exists(path):
+        os.makedirs(path)
+    np.save(f"saved/MapL{length}/coverage_rate_" + agent_name + 'optimistic', coverage)
     if 'UBE' in agent_name:
         visualize_global_uncertainty(agent.qVar,0,10,0)
         visualize_local_uncertainty(agent.R_prior,0,10,0)
