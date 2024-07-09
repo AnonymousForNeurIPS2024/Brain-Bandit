@@ -1,3 +1,4 @@
+import os.path
 
 from environment import make_riverSwim,make_riverSwim_origin, make_SixArms, make_map, make_FourRooms
 from feature_extractor import FeatureTrueState
@@ -61,11 +62,11 @@ if __name__ == '__main__':
     regret_list = []
     base_path = 'saved/map'
     # seed = np.random.randint(100)
-    seed = 10
+    seed = 0
     nEps = 300
-    length = 50
+    length = 150
     save = False
-    agent_name = 'UBE_BBN'
+    agent_name = 'UCRL2'
     T = 10
     coverage = np.zeros(shape=(T,nEps))
     x = 0.
@@ -140,7 +141,10 @@ if __name__ == '__main__':
         # agent.state_visitation
     # print(agent.qVar)
     visualize_vistation(agent.state_visitation)
-    np.save(f"saved/L{length}/coverage_rate_" + agent_name + 'optimistic', coverage)
+    path = f"saved/FourRoomsL{length}/"
+    if not os.path.exists(path):
+        os.makedirs(path)
+    np.save(f"saved/FourRoomsL{length}/coverage_rate_" + agent_name, coverage)
     if 'UBE' in agent_name:
         visualize_global_uncertainty(agent.qVar,0,11,0)
         visualize_local_uncertainty(agent.R_prior,0,11,0)
